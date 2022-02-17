@@ -9,6 +9,7 @@
 import UIKit
 class WelcomeViewController: UIViewController {
 // just comment
+    // another comment 
     @IBOutlet weak var titleLabel: UILabel!
     
     override func viewDidLoad() {
