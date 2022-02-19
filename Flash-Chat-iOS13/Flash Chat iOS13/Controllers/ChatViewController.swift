@@ -15,12 +15,12 @@ class ChatViewController: UIViewController {
     
     
     var messagesArray: [Message] = [
-        Message.init(sender: "12@3.com", body: "Hello3Hello3Hello3Hello3Hello3Hello3Hello3Hello3Hello3Hello3Hello3"),
-        Message.init(sender: "123@4.com", body: "Hello4"),
-        Message.init(sender: "1234@5.com", body: "Hello5"),
-        Message.init(sender: "12345@6.com", body: "Hello6")
+        Message.init(sender: "12@3.com", body: "Hello type new message"),
+    
 
     ]
+    
+    let db = Firestore.firestore()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,9 +31,75 @@ class ChatViewController: UIViewController {
         
         title = K.appName
         navigationItem.hidesBackButton = true
+loadMessages()
+        
     }
     
-    @IBAction func sendPressed(_ sender: UIButton) {}
+    
+    
+ 
+
+    
+    
+    func loadMessages() {
+
+    
+        db.collection(K.FStore.collectionName).order(by: K.FStore.dateField).addSnapshotListener { querySnapshot, error in
+            self.messagesArray = []
+
+            
+            if let e = error {
+                print("error retrive messages \(e)")
+            }else{
+                
+                if let SnapshotDocuments = querySnapshot?.documents{
+                    for doc in SnapshotDocuments {
+                        let data = doc.data()
+                        if let messageSender = data[K.FStore.senderField] as? String , let messageBody = data[K.FStore.bodyField] as? String {
+                            let newMessage = Message.init(sender: messageSender, body: messageBody)
+                            
+                            self.messagesArray.append(newMessage)
+                            
+                            DispatchQueue.main.async {
+                                self.tableView.reloadData()
+                            }
+                        }
+                    }
+                }
+                    
+                
+                
+                
+                
+            }
+        }
+        
+        
+        
+    }
+    
+    @IBAction func sendPressed(_ sender: UIButton) {
+        
+        
+        
+        if  let messageBody = messageTextfield.text,let messageSender = Auth.auth().currentUser?.email {
+            
+            db.collection(K.FStore.collectionName).addDocument(data: [
+                K.FStore.senderField : messageSender,
+                K.FStore.bodyField: messageBody ,
+                K.FStore.dateField: Date().timeIntervalSince1970
+            ]) { error in
+                if let e = error {
+                    print("data base error \(e)")
+                } else {
+                    print("saved successfully")
+                    
+                }
+            }
+        }
+        
+        
+    }
     
     @IBAction func logOutPressed(_ sender: UIBarButtonItem) {
         do {
@@ -61,4 +127,7 @@ extension ChatViewController: UITableViewDataSource{
     
     
 }
+
+
+
 
