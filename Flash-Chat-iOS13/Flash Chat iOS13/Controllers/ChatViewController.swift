@@ -8,16 +8,12 @@
 import Firebase
 import UIKit
 
-
 class ChatViewController: UIViewController {
     @IBOutlet var tableView: UITableView!
     @IBOutlet var messageTextfield: UITextField!
     
-    
     var messagesArray: [Message] = [
-        Message.init(sender: "12@3.com", body: "Hello type new message"),
-    
-
+        Message(sender: "12@3.com", body: "Hello type new message"),
     ]
     
     let db = Firestore.firestore()
@@ -25,85 +21,70 @@ class ChatViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.dataSource = self
-        
         tableView.register(UINib(nibName: K.cellNibName, bundle: nil), forCellReuseIdentifier: K.cellIdentifier)
-        
-        
         title = K.appName
         navigationItem.hidesBackButton = true
-loadMessages()
-        
+        loadMessages()
     }
-    
-    
-    
- 
 
-    
-    
     func loadMessages() {
-
-    
         db.collection(K.FStore.collectionName).order(by: K.FStore.dateField).addSnapshotListener { querySnapshot, error in
             self.messagesArray = []
 
-            
             if let e = error {
                 print("error retrive messages \(e)")
-            }else{
-                
-                if let SnapshotDocuments = querySnapshot?.documents{
+            } else {
+                if let SnapshotDocuments = querySnapshot?.documents {
                     for doc in SnapshotDocuments {
                         let data = doc.data()
-                        if let messageSender = data[K.FStore.senderField] as? String , let messageBody = data[K.FStore.bodyField] as? String {
-                            let newMessage = Message.init(sender: messageSender, body: messageBody)
+                        if let messageSender = data[K.FStore.senderField] as? String, let messageBody = data[K.FStore.bodyField] as? String {
+                            let newMessage = Message(sender: messageSender, body: messageBody)
                             
                             self.messagesArray.append(newMessage)
                             
                             DispatchQueue.main.async {
+                                self.scrollChatView()
+
                                 self.tableView.reloadData()
                             }
                         }
                     }
                 }
-                    
-                
-                
-                
-                
             }
         }
-        
-        
-        
+    }
+    
+    func scrollChatView() {
+        let bottomOffset = CGPoint(x: 0, y: tableView.contentSize.height - tableView.bounds.size.height + 60)
+        tableView.setContentOffset(bottomOffset, animated: true)
     }
     
     @IBAction func sendPressed(_ sender: UIButton) {
-        
-        
-        
-        if  let messageBody = messageTextfield.text,let messageSender = Auth.auth().currentUser?.email {
-            
-            db.collection(K.FStore.collectionName).addDocument(data: [
-                K.FStore.senderField : messageSender,
-                K.FStore.bodyField: messageBody ,
-                K.FStore.dateField: Date().timeIntervalSince1970
-            ]) { error in
-                if let e = error {
-                    print("data base error \(e)")
-                } else {
-                    print("saved successfully")
-                    
+        if messageTextfield.text == "" {
+            messageTextfield.placeholder = "please enter message to be sent"
+        } else {
+            if let messageBody = messageTextfield.text, let messageSender = Auth.auth().currentUser?.email {
+                db.collection(K.FStore.collectionName).addDocument(data: [
+                    K.FStore.senderField: messageSender,
+                    K.FStore.bodyField: messageBody,
+                    K.FStore.dateField: Date().timeIntervalSince1970,
+                ]) { error in
+                    if let e = error {
+                        print("data base error \(e)")
+                    } else {
+                        print("saved successfully")
+                    }
                 }
             }
+            messageTextfield.text = ""
+            messageTextfield.placeholder = "Write a message"
+            scrollChatView()
         }
-        
-        
     }
     
     @IBAction func logOutPressed(_ sender: UIBarButtonItem) {
         do {
-            try Auth.auth().signOut()
+            try Auth.auth().signOut()
             navigationController?.popToRootViewController(animated: true)
         
         } catch let signOutError as NSError {
@@ -112,9 +93,7 @@ loadMessages()
     }
 }
 
-
-
-extension ChatViewController: UITableViewDataSource{
+extension ChatViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return messagesArray.count
     }
@@ -124,10 +103,4 @@ extension ChatViewController: UITableViewDataSource{
         cell.label?.text = messagesArray[indexPath.row].body
         return cell
     }
-    
-    
 }
-
-
-
-
