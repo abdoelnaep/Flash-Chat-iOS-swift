@@ -20,7 +20,7 @@ class RegisterViewController: UIViewController {
             Auth.auth().createUser(withEmail: email, password: password) { [self] authResult, error in
                 
                 if let e = error{
-                    print(e.localizedDescription)
+                   // print(e.localizedDescription)
                     self.errorMessage.text = String(e.localizedDescription)
                     self.errorMessage.sizeToFit()
                 }
